@@ -1,17 +1,33 @@
-import React, { useState, useEffect, useContext } from 'react'
-import { View, StyleSheet, FlatList, Text, Dimensions } from 'react-native'
+import React, { useState, useEffect, useContext, useCallback } from 'react'
+import { View, FlatList, Text, Dimensions, StyleSheet } from 'react-native'
 import { AddTodo } from '../components/AddTodo'
 import { Todo } from '../components/Todo'
 import { THEME } from '../theme'
 import { TodoContext } from '../context/todo/todoContext'
 import { ScreenContext } from '../context/screen/screenContext'
+import { AppLoader } from '../components/ui/AppLoader'
+import { AppText } from '../components/ui/AppText'
+import { AppButton } from '../components/ui/AppButton'
 
-export const MainScreen = ({ openTodo }) => {
-	const { addTodo, todos, removeTodo } = useContext(TodoContext)
+export const MainScreen = () => {
+	const {
+		addTodo,
+		todos,
+		removeTodo,
+		fetchTodos,
+		isLoading,
+		error,
+	} = useContext(TodoContext)
 	const { changeScreen } = useContext(ScreenContext)
 	const [deviceWidth, setDeviceWidth] = useState(
 		Dimensions.get('window').width - THEME.PADDING_HORIZONTAL * 2
 	)
+
+	const loadTodos = useCallback(async () => await fetchTodos(), [fetchTodos])
+
+	useEffect(() => {
+		loadTodos()
+	}, [])
 
 	useEffect(() => {
 		const updateWidth = () => {
@@ -26,6 +42,19 @@ export const MainScreen = ({ openTodo }) => {
 			Dimensions.removeEventListener('change', updateWidth)
 		}
 	})
+
+	if (isLoading) {
+		return <AppLoader />
+	}
+
+	if (error) {
+		return (
+			<View style={styles.center}>
+				<AppText style={styles.error}>{error}</AppText>
+				<AppButton onPress={loadTodos}>Try again</AppButton>
+			</View>
+		)
+	}
 
 	let content = (
 		<View
@@ -55,4 +84,15 @@ export const MainScreen = ({ openTodo }) => {
 	)
 }
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+	error: {
+		fontSize: 20,
+		color: THEME.DANGER_COLOR,
+		marginBottom: 10,
+	},
+	center: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+})
